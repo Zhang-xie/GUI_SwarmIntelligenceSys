@@ -1,0 +1,139 @@
+
+#cars
+{
+	position:absolute;
+	width:100%;
+	height:40%;
+	top:0px;
+	background:white;
+}
+
+#data
+{
+	position:absolute;
+	width:100%;
+	height:30%;
+	top:40%;
+	background: skyblue;
+}
+
+#realTime
+{
+	position:absolute;
+	width:100%;
+	height:30%;
+	top:70%;
+	background: white;
+}
+.cars_box_wrapper{
+	width: 100%;
+	height: 90%;
+}
+
+table{
+	width: 100%;
+	height: 100%;
+	border-collapse: collapse;
+	border-bottom: 1px solid #ddd;
+}
+
+thead{
+	background-color: #333;
+	color:#fff; 
+}
+
+thead,tbody{
+	width: 100%;
+}
+
+.cars_box>th,td{
+    border: 1px solid #ddd;
+	width: 35%;
+	height: 40px;
+    box-sizing: border-box;
+}
+
+tbody {
+	display: block;
+	height: 100%;
+	overflow-y: auto;
+}
+
+table thead, tbody tr {
+    display:table;
+    width:100%;
+    table-layout:fixed;
+}
+
+.state_color{
+	width: 50%;
+	height: 50%;
+	background-color: red;
+}
+
+.btn_wrapper{
+	width: 100%;
+	height: 10%;
+	text-align: center;
+}
+
+#boardcast_btn{
+	width: 50%;
+	height: 80%;
+	overflow: hidden;
+}
+
+.data_box{
+	position:absolute;
+	top: 10%;
+}
+
+.data_box>td{
+	border: 1px solid #ddd;
+	width: 50%;
+	height: 40px;
+    box-sizing: border-box;
+}
+
+.data_box>thead{
+	font-size: 25pt;
+	font-weight: bold;
+	background: white;
+	color: black;
+}
+
+.data_box>tbody{
+	background-color: gray;
+}
+
+#message_title{
+	width: 100%;
+	height: 20%;
+	font-size: 28pt;
+	font-weight: bold;
+	background: white;
+	color: black;
+	text-align: center;
+}
+
+#message_body{
+	width: 100%;
+	height: 80%;
+	background: black;
+	color:white;
+	white-space: normal;
+	word-break: break-all;
+	word-wrap: break-word;
+}
+
+.opboxLengthen {
+  width: 100%;
+  float: none;
+}
+
+.opboxShorten {
+  width: 80%;
+  float: none;
+}
+
+

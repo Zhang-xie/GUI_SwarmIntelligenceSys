@@ -1,0 +1,21 @@
+#header
+{
+	width:100%;
+	height:30px;
+	border-style:solid;
+    border-width:2px;
+	border-color:red;
+	background-color:red;
+	position:fixed;
+	top:-2px;
+	left:-3px;
+}
+#header>p 
+{
+	font-style:normal;
+	font-size:25px;
+	text-align:center;
+	color:white;
+	position:relative;
+	top:-25px;
+}

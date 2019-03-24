@@ -1,0 +1,195 @@
+<!DOCTYPE HTML>
+<html lang="zh">
+	<head>
+		<title>GUI</title>
+		<meta charset="UTF-8"/>
+		<!-- 引入 echarts.js -->
+	    <script src="js/echarts.js"></script>
+		<script src="js/map.js"></script>
+		<link type="text/css" href="css/header.css" rel="stylesheet" />
+		<link type="text/css" href="css/control_column.css" rel="stylesheet" />
+		<!-- <link type="text/css" href="css/wholePage.css" rel="stylesheet" /> -->
+		<link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+		<link rel="stylesheet" type="text/css" href="css/style.css">
+		<script src="js/jquery-1.8.3.min.js"></script>
+		<script src="js/bootstrap-3.3.4.js"></script>
+		<script src="js/mainJS.js"></script>
+		<script type="text/javascript">
+			// When all the elements in the webpage are ready, this function will be called
+			// $ represents a selector selecting the elements in the parentheses
+			// $(.xxx) selects all the elements with class .xxx in css file
+			// $(#xxx) selects all the elements with id xxx
+			// $([xx="yy"]) selects all the elements with property naming xx valuing yy
+			$(document).ready(function () {
+				var trigger = $('.hamburger');
+				var overlay = $('.overlay');
+				var mainCanvas = $('#mainCanvas');
+				// var mainOpBox = $('#main');
+				var isClosed = false;
+
+				//When the element is clicked, the function will be called
+				trigger.click(function () {
+					hamburger_cross();      
+				});
+
+				function hamburger_cross() {
+					if (isClosed == true) {          
+						overlay.hide();
+						//is-open, is-closed are classes defined in style.css representing the style of the hamburger
+						trigger.removeClass('is-open');	//Remove the class from the selected elements
+						trigger.addClass('is-closed');	//Add class to the selected elements
+						isClosed = false;
+					} else {   
+						overlay.show();
+						trigger.removeClass('is-closed');
+						trigger.addClass('is-open');
+						isClosed = true;
+					}
+				}
+				// toggleClass switches the class of the selected elements
+				// If the selected elements have some classes, then delete them and add the new ones
+				$('[data-toggle="offcanvas"]').click(function() {
+					$('#wrapper').toggleClass('toggled');
+				});  
+			});
+		</script>
+	</head>
+
+
+	<body>
+
+		<!-- The canvas on the back side -->
+		<div id="mainCanvasDiv" style="z-index: 10;">
+			<!-- <canvas id="mainCanvas" style="position:absolute; border: blue 4px solid"></canvas> -->
+			<canvas id="mainCanvas" style="position:absolute;"></canvas>
+			<script>
+			    mainCanvas.style.left=0;
+			    mainCanvas.style.top=0;
+			</script>
+		</div>
+
+
+		<!-- The total map -->
+		<div id="mainControlMapDiv" style="z-index: 30;">
+			<div id="mainControlMap" class="controlMapDivStyle"></div>
+		</div>
+
+
+		<!-- The canvas on the front side -->
+		<div id="frontCanvasDiv" style="z-index: 20;">
+			<!-- <canvas id="frontCanvas" style="position:absolute; border: red 2px solid"></canvas> -->
+			<canvas id="frontCanvas" style="position:absolute;"></canvas>
+			<script>
+			    frontCanvas.style.left=0;
+			    frontCanvas.style.top=0;
+			</script>
+		</div>
+
+
+
+
+		<script type="text/javascript" src="js/mainOpBoxJS.js"></script>
+		<script type="text/javascript" src="js/controlMap.js"></script>
+
+
+
+		<div id="wrapper" style="z-index: 40;">
+			<div class="overlay"></div> <!-- the head line bar of the whole page -->
+
+			<div class="navbar navbar-inverse navbar-fixed-top" id="sidebar-wrapper" role="navigation"> <!-- the left bar for the details of the cars -->
+
+				<div id="cars"> <!--  showing the connect situation of the cars -->
+					<div class="cars_box_wrapper">
+						<table class="cars_box">
+							<thead>
+								<tr>
+									<th>ID</th>
+									<th>TIME</th>
+									<th>STATE</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>01</td>
+									<td>09:00</td>
+									<td><div class="state_color"></div></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div class="btn_wrapper">
+							<button type="button" id="boardcast_btn">boardcast</button>  <!--  this button is going to creat a call to check the connection of the cars -->
+					</div>
+				</div>
+
+				<div id="data"> <!--  this block gonna showing the detals of a pecular car which is choosed by the user -->
+					<table class="data_box">
+						<thead>
+							<tr>
+								<th>ID</th>
+								<th>01</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Pich</td>
+								<td>01</td>
+							</tr>
+							<tr>
+								<td>Row</td>
+								<td>01</td>
+							</tr>
+							<tr>
+								<td>Yaw</td>
+								<td>01</td>
+							</tr>
+							<tr>
+								<td>Location</td>
+								<td>01</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div id="realTime"> <!-- shwing some messages that GUI is getting -->
+					<div id="message_title">Message</div>
+					<div id="message_body">00000000000000000000000000000000000000000000000000000000000000000000000000</div>
+				</div>
+
+			</div>
+
+			<div id="page-content-wrapper"> <!-- control the visibility of the left bar -->
+			  <button type="button" class="hamburger is-closed animated fadeInLeft" data-toggle="offcanvas">
+				<span class="hamb-top"></span>
+				<span class="hamb-middle"></span>
+				<span class="hamb-bottom"></span>
+			  </button>
+			</div>
+		</div>
+
+		<!-- <div id="wrapper" class="wrapperStyle">
+			<div class="overlay"></div>
+			<nav class="navbar navbar-inverse navbar-fixed-top" id="sidebar-wrapper" role="navigation">
+				<ul class="nav sidebar-nav">
+					<li class="sidebar-brand"><a href="#">Main GUI</a></li>
+					<li><a href="#"><i class="fa fa-fw fa-home"></i> Home</a></li>
+					<li><a href="#"><i class="fa fa-fw fa-folder"></i> Page one</a></li>
+					<li><a href="#"><i class="fa fa-fw fa-file-o"></i> Second page</a></li>
+					<li><a href="#"><i class="fa fa-fw fa-cog"></i> Third page</a></li>
+				</ul>
+			</nav>
+			<div id="page-content-wrapper">
+			  <button type="button" class="hamburger is-closed animated fadeInLeft" data-toggle="offcanvas">
+				<span class="hamb-top"></span>
+				<span class="hamb-middle"></span>
+				<span class="hamb-bottom"></span>
+			  </button>
+			</div>
+		</div> -->
+
+
+
+
+
+	</body>
+</html>

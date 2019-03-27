@@ -9,7 +9,7 @@
 <script>
 $(document).ready(function(){
 	$("button").click(function(){
-		$.post("mysql/testall.php",{},
+		$.post("mysql/get_all.php",{},
 		function(data,status){
 			alert("数据: \n" + data + "\n状态: " + status);
 		});

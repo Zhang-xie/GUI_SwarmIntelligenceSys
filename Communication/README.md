@@ -15,7 +15,6 @@ server.runReceiveService()
 
 ### client.py
 
-整合了
   1. 服务器对小车终端一对多多播通信的接收模块
   2. 小车对服务器多对一TCP多线程通信的发送模块
   3. 通信模块与小车进行数据交换的模块（待完善）考虑通过文件读写
@@ -40,5 +39,5 @@ client.send(dict data)
 ```
 ```
 #client.py
-def __dataProcessing(string data) :
+def __dataProcessing(string data)
 ```

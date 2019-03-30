@@ -23,7 +23,7 @@ class sendThread(threading.Thread) :
         self.data = data
     def run(self) :
         while self._running :
-            c.sendto(self.data.encode(), (SERVER_ADDR, SERVER_REG_PORT))
+            self.c.sendto(self.data.encode(), (SERVER_ADDR, SERVER_REG_PORT))
             time.sleep(0.5)
 
     def terminate(self) :
@@ -36,7 +36,7 @@ class recvACKThread(threading.Thread) :
         self._running = True
         self.c = c
     def run(self) :
-        data, addr = c.recvfrom(1024)
+        data, addr = self.c.recvfrom(1024)
         print(data.decode(), addr)
 
     def terminate(self) :
@@ -110,3 +110,19 @@ def send(data) :
 #Need  to finish
 def __dataProcessing(data) :
     pass
+
+# 测试
+if __name__ =="__main__":
+    run()
+    data = {
+    'ID' : 101,
+    'X'  : 100.0,
+    'Y'  : 200.0,
+    'Z'  : 300.0,
+    'speed' : 15.0,
+    'pitch' : 16.0,
+    'roll'  : 17.0,
+    'azimuth' : 18.0
+    }
+    data = json.dumps(data)
+    send(data)

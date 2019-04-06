@@ -50,7 +50,8 @@ thead,tbody{
 .cars_box>th,td{
     border: 1px solid #ddd;
 	width: 35%;
-	height: 40px;
+	height: 35px;
+	text-align: center;
     box-sizing: border-box;
 }
 
@@ -67,9 +68,9 @@ table thead, tbody tr {
 }
 
 .state_color{
-	width: 50%;
+	width: 100%;
 	height: 50%;
-	background-color: red;
+	background-color: green;
 }
 
 .btn_wrapper{
@@ -86,14 +87,14 @@ table thead, tbody tr {
 
 .data_box{
 	position:absolute;
-	top: 10%;
+	top: 5%;
 }
 
 .data_box>td{
 	border: 1px solid #ddd;
 	width: 50%;
-	height: 40px;
-    box-sizing: border-box;
+	height: 20px;
+  box-sizing: border-box;
 }
 
 .data_box>thead{

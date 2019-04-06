@@ -5,16 +5,18 @@
 		<meta charset="UTF-8"/>
 		<!-- 引入 echarts.js -->
 	    <script src="js/echarts.js"></script>
-		<script src="js/map.js"></script>
+	    <script src="js/jquery.min.js"></script>
+	    <!-- <script src="js/jquery-3.3.1.slim.min.js"></script> -->
+		<!-- <script src="js/bootstrap-3.3.4.js"></script> -->
+		<script src="js/bootstrap.min.js"></script>
+		<script src="js/jquery.flightindicators.js"></script><!-- this is for the dicators to showing the pose -->
+
 		<link type="text/css" href="css/header.css" rel="stylesheet" />
-		<link type="text/css" href="css/control_column.css" rel="stylesheet" />
-		<!-- <link type="text/css" href="css/wholePage.css" rel="stylesheet" /> -->
+		<link type="text/css" href="css/control_column.css" rel="stylesheet"/><!-- the style for the left column of the page -->
 		<link rel="stylesheet" type="text/css" href="css/bootstrap.css">
-		<link rel="stylesheet" type="text/css" href="css/style.css">
-		<script src="js/jquery-1.8.3.min.js"></script>
-		<script src="js/bootstrap-3.3.4.js"></script>
-		<script src="js/mainJS.js"></script>
-		
+		<link rel="stylesheet" type="text/css" href="css/style.css"><!-- the style for the whole page and the map -->
+		<link rel="stylesheet" type="text/css" href="css/flightindicators.css" />
+
 <!-- 左边栏的开关按钮 -->
 		<script type="text/javascript">
 			// When all the elements in the webpage are ready, this function will be called
@@ -28,7 +30,6 @@
 				var mainCanvas = $('#mainCanvas');
 				// var mainOpBox = $('#main');
 				var isClosed = false;
-
 				//When the element is clicked, the function will be called
 				trigger.click(function () {
 					hamburger_cross();      
@@ -44,6 +45,7 @@
 					} else {   
 						overlay.show();
 						trigger.removeClass('is-closed');
+					
 						trigger.addClass('is-open');
 						isClosed = true;
 					}
@@ -56,67 +58,258 @@
 			});
 		</script>
 		
-<!-- 点击左边栏boardcast按钮，将每一辆车的最新连接信息显示 -->
-		<script>
-			$(document).ready(function(){
-				$("#boardcast_btn").click(function(){
-					$.post("mysql/get_all.php",{},
-					function(data,status){
-						   testJson = eval("(" + data + ")"); 
-						var html = '';
-					    for(var i = 0; i < testJson.length; i++)
-					    {
-					    	html +='<tr>';
-					        html += '<td>' + testJson[i].ID + '</td>';
-					        html += '<td>' + testJson[i].time + '</td>';
-					        html += '<td><div class="state_color"></td>';
-					        html +='</tr>';
-					    }
-					    $('.cars_box tbody').append(html);
 
-					});
+
+<!-- 点击左边栏boardcast按钮，将开始跟新所有车辆的连接信息，同时显示在map -->
+		<script>
+		    var myChart ;  //声明全局使用的chart
+            var IDforDetails = 0;//存下用户需要知道详细信息的对象的ID，便于更新左边栏的信息框以及姿态显示图标
+            var options;//姿态显示设置
+
+
+            //首先获取echarts，然后设定一个鼠标点击的监听，最后设置refresh反复运行，实现对map的刷新
+            $(document).ready( function(){
+            	myChart = echarts.init(document.getElementById('mainControlMap'));  //get echarts	
+
+            	myChart.on('click', function (params) {  //监听鼠标点击事件函数
+				     // console.log(params.value[4]);
+				     // console.log(params.value);
+                    IDforDetails = params.value[4];//因为在下面的option中ID存在数组第四个
+				}); 
+				//点击按钮后，refresh刷新map	
+				$("#boardcast_btn").click(
+				 	function(){							 	    				 	   	 
+				 		setInterval(refresh, 300);//执行refresh函数，每30毫秒一次
 				});
+
+                // 设定姿态仪表盘的初始参数
+				options = {
+					size : 150,				// Sets the size in pixels of the indicator (square)
+					roll : 0,				// Roll angle in degrees for an attitude indicator
+					pitch : 10,				// Pitch angle in degrees for an attitude indicator
+					heading: 0,				// Heading angle in degrees for an heading indicator
+					vario: 0,				// Variometer in 1000 feets/min for the variometer indicator
+					airspeed: 0,			// Air speed in knots for an air speed indicator
+					altitude: 0,			// Altitude in feets for an altimeter indicator
+					pressure: 1000,			// Pressure in hPa for an altimeter indicator
+					showBox : false,			// Sets if the outer squared box is visible or not (true or false)
+					img_directory : 'img/'	// The directory where the images are saved to
+					};
+
+					var indicator_0 = $.flightIndicator('#attitude_0', 'attitude',options);
+					var indicator_1 = $.flightIndicator('#attitude_1', 'heading',options);
+					var indicator_2 = $.flightIndicator('#attitude_2', 'variometer',options);
+					var indicator_3 = $.flightIndicator('#attitude_3', 'airspeed',options);
+					var indicator_4 = $.flightIndicator('#attitude_4', 'altimeter',options);
+
 			});
+				
+			//refresh函数，访问数据库获取每辆车的最新记录，然后mychart重新setoption，同时，刷新左侧栏的第一个信息框显示	
+            function refresh(){
+       	       
+				$.post("mysql/get_all.php",{},
+				function(data,status){
+					testJson = eval("(" + data + ")"); 
+					var html = '';
+				    for(var i = 0; i < testJson.length; i++)
+				    {
+				    	html +='<tr>';
+				        html += '<td>' + testJson[i].ID + '</td>';
+				        html += '<td>' + testJson[i].time + '</td>';
+				        html += '<td><div class="state_color"></td>';
+								html +='</tr>';
+					    //更新左边栏第二个信息框（details）以及 对应的姿态仪表
+						if(testJson[i].ID == IDforDetails){
+							var htmltemp = '';
+							htmltemp += '<thead><tr><th>ID</th><th id="single_id">'+testJson[i].ID+'</th></tr></thead>';
+                            htmltemp += '<tbody><tr><td>Speed</td><td id="single_speed">'+ testJson[i].speed+'</td></tr>';
+							htmltemp += '<tr><td>Pitch</td><td id="single_pitch">'+ testJson[i].pitch+'</td></tr>';
+							htmltemp += '<tr><td>Roll</td><td id="single_roll">'+ testJson[i].roll+'</td></tr>';
+							htmltemp += '<tr><td>Azimuth</td><td id="single_azimuth">'+ testJson[i].azimuth+'</td></tr>';
+							htmltemp += '<tr><td>Location</td><td id="single_location">'+ testJson[i].X + ' ' + testJson[i].Y + ' ' + testJson[i].Z + '</td></tr></tbody>';
+							var ele=document.getElementById("car_details");
+                            ele.innerHTML= htmltemp;
+                            
+                            // 设置对应的仪表盘显示
+                            options = {
+								size : 150,				// Sets the size in pixels of the indicator (square)
+								roll : testJson[i].roll,				// Roll angle in degrees for an attitude indicator
+								pitch : testJson[i].pitch,				// Pitch angle in degrees for an attitude indicator
+								heading: testJson[i].azimuth,				// Heading angle in degrees for an heading indicator
+								vario: 0,				// Variometer in 1000 feets/min for the variometer indicator
+								airspeed: 0,			// Air speed in knots for an air speed indicator
+								altitude: 0,			// Altitude in feets for an altimeter indicator
+								pressure: 1000,			// Pressure in hPa for an altimeter indicator
+								showBox : false,			// Sets if the outer squared box is visible or not (true or false)
+								img_directory : 'img/'	// The directory where the images are saved to
+							};
+
+							var indicator_0 = $.flightIndicator('#attitude_0', 'attitude',options);
+							var indicator_1 = $.flightIndicator('#attitude_1', 'heading',options);
+							var indicator_2 = $.flightIndicator('#attitude_2', 'variometer',options);
+							var indicator_3 = $.flightIndicator('#attitude_3', 'airspeed',options);
+							var indicator_4 = $.flightIndicator('#attitude_4', 'altimeter',options);		
+						}		
+				    }
+				    var element=document.getElementById("cars_situation");
+                    element.innerHTML= html;
+                    // 以上更新到侧边栏的车辆信息框中
+
+                    // 以下为更新map显示	    
+				    var totalData = [];
+				    var totalDataNum = 0;
+				    totalDataNum = testJson.length;
+				    for(var i = 0; i < testJson.length; i++)
+				    {
+				     totalData.push([testJson[i].X, testJson[i].Y, 28, 'rgb(128,128,0)', testJson[i].ID, testJson[i].speed, testJson[i].roll, testJson[i].pitch, testJson[i].azimuth, testJson[i].time]); 
+				    };
+				    option = {
+				      animation: true,
+				    　tooltip:{
+				        // trigger:'axis'
+				        showDelay: 0,
+				        formatter: function (params) {
+				          if(params.value.length > 1) {
+				            return params.seriesName + '<br/>x: ' + params.value[0] + '<br/>y: ' + params.value[1];
+				          }
+				        },
+				        axisPointer: {
+				          show: true,
+				          type : 'cross',
+				          lineStyle: {
+				              type : 'dashed',
+				              width : 1
+				          }
+				        }
+				      },
+
+				      xAxis: {
+				        show: true,
+				        type: 'value',
+				        min: 'dataMin',
+				        max: 'dataMax',
+				        splitLine: {
+				          show: true
+				        }
+				      },
+				      yAxis: {
+				        show: true,
+				        type: 'value',
+				        min: 'dataMin',
+				        max: 'dataMax',
+				        splitLine: {
+				          show: true
+				        }
+				      },
+
+				      dataZoom: [
+				        //Initialize the style of the x and y axises
+				        {
+				          // moveOnMouseMove: false,
+				          type: 'slider',
+				          show: true,
+				          xAxisIndex: [0],
+				          start: 0,
+				          end: 100
+				        },
+				        {
+				          // moveOnMouseMove: false,
+				          type: 'slider',
+				          show: true,
+				          yAxisIndex: [0],
+				          left: '93%',
+				          start: 0,
+				          end: 100
+				        },
+
+				        //The operation of the mouse wheel
+				        {
+				          moveOnMouseMove: true,
+				          type: 'inside',
+				          xAxisIndex: [0],
+				          start: 1,
+				          end: 35
+				        },
+				        {
+				          moveOnMouseMove: true,
+				          type: 'inside',
+				          yAxisIndex: [0],
+				          start: 29,
+				          end: 36
+				        }
+				      ],
+
+				      series: [
+				        {
+				          name: 'robotVehicle',
+				          type: 'scatter',
+				          itemStyle: {
+				            normal: {
+				              //Set the transparency
+				              opacity: 0.8,
+				              color: 'rgb(128,128,0)' 
+				              // color: function (val) {
+				              //   return val[3];
+				              // }
+				            },
+				            emphasis: {
+				              color: 'rgb(0,255,0)'
+				            }
+				          },
+				          symbolSize: function (val) {
+				            return val[2];
+				          },
+				          data: totalData,
+
+				          label: {
+				            show: true,
+				            color: 'rgb(0,0,0)',
+				            position: 'top',
+				            formatter: function(params) {
+				              return params.value[4];
+				            }
+				          }
+				        },
+				      ]
+				    };
+				     myChart.setOption(option);
+				    
+				});}
 		</script>
+
 	</head>
 
 
 	<body>
 
-		<!-- The canvas on the back side -->
-		<div id="mainCanvasDiv" style="z-index: 10;">
-			<!-- <canvas id="mainCanvas" style="position:absolute; border: blue 4px solid"></canvas> -->
-			<canvas id="mainCanvas" style="position:absolute;"></canvas>
-			<script>
-			    mainCanvas.style.left=0;
-			    mainCanvas.style.top=0;
-			</script>
+
+		<div id="modeButton" class="modeButtonDivStyle">
+			<button id="detailsButton">details</button>
+			<button id="controlButton">control</button>			
+		</div><!-- thses buttons are used to change the model of the showing window -->
+
+		<div id="mainControlMapDiv" >
+			<div id="mainControlMap" class="controlMapDivStyle"></div>			
 		</div>
 
-
-		<!-- The total map -->
-		<div id="mainControlMapDiv" style="z-index: 30;">
-			<div id="mainControlMap" class="controlMapDivStyle"></div>
+        <!-- 暂时用来放姿态显示仪表板 -->
+		<div id="selectedSector" class="selectedSectorStyle">
+			<div>
+				<span id="attitude_0" style="float: right;"></span>
+			</div>
+			<div>
+				<span id="attitude_1" style="float: right;"></span>
+			</div>
+			<div>
+				<span id="attitude_2" style="float: right;"></span>
+			</div>
+			<div>
+				<span id="attitude_3" style="float: right;"></span>
+			</div>
+			<div>
+				<span id="attitude_4" style="float: right;"></span>
+			</div>
 		</div>
-
-
-		<!-- The canvas on the front side -->
-		<div id="frontCanvasDiv" style="z-index: 20;">
-			<!-- <canvas id="frontCanvas" style="position:absolute; border: red 2px solid"></canvas> -->
-			<canvas id="frontCanvas" style="position:absolute;"></canvas>
-			<script>
-			    frontCanvas.style.left=0;
-			    frontCanvas.style.top=0;
-			</script>
-		</div>
-
-
-
-
-		<script type="text/javascript" src="js/mainOpBoxJS.js"></script>
-		<script type="text/javascript" src="js/controlMap.js"></script>
-
-
 
 		<div id="wrapper" style="z-index: 40;">
 			<div class="overlay"></div> <!-- the head line bar of the whole page -->
@@ -133,12 +326,7 @@
 									<th>STATE</th>
 								</tr>
 							</thead>
-							<tbody>
-								<tr>
-									<td>01</td>
-									<td>09:00</td>
-									<td><div class="state_color"></div></td>
-								</tr>
+							<tbody id="cars_situation">
 							</tbody>
 						</table>
 					</div>
@@ -148,29 +336,33 @@
 				</div>
 
 				<div id="data"> <!--  this block gonna showing the detals of a pecular car which is choosed by the user -->
-					<table class="data_box">
+					<table class="data_box" id='car_details'>
 						<thead>
 							<tr>
 								<th>ID</th>
-								<th>01</th>
+								<th id="single_id">01</th>
 							</tr>
 						</thead>
 						<tbody>
 							<tr>
-								<td>Pich</td>
-								<td>01</td>
+								<td>Speed</td>
+								<td id="single_speed">000</td>
 							</tr>
 							<tr>
-								<td>Row</td>
-								<td>01</td>
+								<td>Pitch</td>
+								<td id="single_pitch">000</td>
 							</tr>
 							<tr>
-								<td>Yaw</td>
-								<td>01</td>
+								<td>Roll</td>
+								<td id="single_roll">000</td>
+							</tr>
+							<tr>
+								<td>Azimuth</td>
+								<td id="single_azimuth">000</td>
 							</tr>
 							<tr>
 								<td>Location</td>
-								<td>01</td>
+								<td id="single_location">000</td>
 							</tr>
 						</tbody>
 					</table>
@@ -191,30 +383,5 @@
 			  </button>
 			</div>
 		</div>
-
-		<!-- <div id="wrapper" class="wrapperStyle">
-			<div class="overlay"></div>
-			<nav class="navbar navbar-inverse navbar-fixed-top" id="sidebar-wrapper" role="navigation">
-				<ul class="nav sidebar-nav">
-					<li class="sidebar-brand"><a href="#">Main GUI</a></li>
-					<li><a href="#"><i class="fa fa-fw fa-home"></i> Home</a></li>
-					<li><a href="#"><i class="fa fa-fw fa-folder"></i> Page one</a></li>
-					<li><a href="#"><i class="fa fa-fw fa-file-o"></i> Second page</a></li>
-					<li><a href="#"><i class="fa fa-fw fa-cog"></i> Third page</a></li>
-				</ul>
-			</nav>
-			<div id="page-content-wrapper">
-			  <button type="button" class="hamburger is-closed animated fadeInLeft" data-toggle="offcanvas">
-				<span class="hamb-top"></span>
-				<span class="hamb-middle"></span>
-				<span class="hamb-bottom"></span>
-			  </button>
-			</div>
-		</div> -->
-
-
-
-
-
 	</body>
 </html>

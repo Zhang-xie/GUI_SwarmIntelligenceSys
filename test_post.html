@@ -9,10 +9,10 @@
 <script>
 $(document).ready(function(){
 	$("button").click(function(){
-		$.post("mysql/getSingle.php",{ID:211},
-		function(data,status){
-			alert("数据: \n" + data + "\n状态: " + status);
-		});
+		$.post("mysql/postCommand.php",{commandID:0 , start_x:0,start_y:0,start_z:0,end_x:0,end_y:0,end_z:0,IDs:0 },
+								function(data,status){
+									alert(status);
+							});
 	});
 });
 </script>
@@ -23,4 +23,3 @@ $(document).ready(function(){
 <!-- <script type="text/javascript" src="mysql/testall.php"></script> -->
 </body>
 </html>
-

@@ -65,6 +65,10 @@
 		    var myChart ;  //声明全局使用的chart
             var IDforDetails = 0;//存下用户需要知道详细信息的对象的ID，便于更新左边栏的信息框以及姿态显示图标
             var options;//姿态显示设置
+            var flag = 0;//用来标记是显示模式，还是控制模式；0->显示；1->控制
+            var timer;//用来记录refresh的重复执行
+            var ids = 0;//用来记录在控制时候选中的个体ID 默认0，代表没有
+            var totalData;//记录所有ID的数据
 
 
             //首先获取echarts，然后设定一个鼠标点击的监听，最后设置refresh反复运行，实现对map的刷新
@@ -76,10 +80,32 @@
 				     // console.log(params.value);
                     IDforDetails = params.value[4];//因为在下面的option中ID存在数组第四个
 				}); 
+				myChart.on('brushselected', function(params){ //触发了框选之后获取已框选的个体的ID
+					 var temp = new Array();
+					 var mainSeries = params.batch[0].selected[0];
+					 for (var i = 0; i < mainSeries.dataIndex.length; i++) {
+				        var rawIndex = mainSeries.dataIndex[i];
+				        temp.push(totalData[rawIndex][4]);			   
+				    }
+				    ids = temp.join('');
+				    var ele=document.getElementById("choosedId");
+				    ele.value = ids;
+				});
 				//点击按钮后，refresh刷新map	
 				$("#boardcast_btn").click(
-				 	function(){							 	    				 	   	 
-				 		setInterval(refresh, 300);//执行refresh函数，每30毫秒一次
+				 	function(){	
+				 		if(flag == 0){ //进入显示模式
+				 			timer = setInterval(refresh, 300);//执行refresh函数，每30毫秒一次
+				 			flag = 1;
+				 		}						 	    				 	   	 
+				 		else { //进入控制模式
+				 			clearInterval(timer);//取消重复刷新 
+				 			$.post("mysql/postCommand.php",{ commandID:0 , start_x:0,start_y:0,start_z:0,end_x:0,end_y:0,end_z:0,IDs:ids},//提交command 0 号指令，该指令表示所有个体停止运动
+								function(data,status){
+							});
+				 			refresh();//当前所有个体静止所在的位置显示
+				 			flag = 0;
+				 		}
 				});
 
                 // 设定姿态仪表盘的初始参数
@@ -107,7 +133,7 @@
 			//refresh函数，访问数据库获取每辆车的最新记录，然后mychart重新setoption，同时，刷新左侧栏的第一个信息框显示	
             function refresh(){
        	       
-				$.post("mysql/get_all.php",{},
+				$.post("mysql/getAll.php",{},
 				function(data,status){
 					testJson = eval("(" + data + ")"); 
 					var html = '';
@@ -117,7 +143,7 @@
 				        html += '<td>' + testJson[i].ID + '</td>';
 				        html += '<td>' + testJson[i].time + '</td>';
 				        html += '<td><div class="state_color"></td>';
-								html +='</tr>';
+								html +='</tr>';                  
 					    //更新左边栏第二个信息框（details）以及 对应的姿态仪表
 						if(testJson[i].ID == IDforDetails){
 							var htmltemp = '';
@@ -156,7 +182,7 @@
                     // 以上更新到侧边栏的车辆信息框中
 
                     // 以下为更新map显示	    
-				    var totalData = [];
+				    totalData = [];
 				    var totalDataNum = 0;
 				    totalDataNum = testJson.length;
 				    for(var i = 0; i < testJson.length; i++)
@@ -238,7 +264,20 @@
 				          end: 36
 				        }
 				      ],
-
+                        brush: {
+					        outOfBrush: {
+					            color: '#abc'//刷选区之外的颜色
+					        },
+					        brushStyle: {
+					            borderWidth: 2,
+					            color: 'rgba(0,0,0,0.2)',
+					            borderColor: 'rgba(0,0,0,0.5)',
+					        },
+					        seriesIndex: [0],//指定哪些 series 可以被刷选，可取值为：'all': 所有 series'Array': series index 列表'number': 某个 series index
+					        throttleType: 'debounce',//以下两项都是用来设定用户选中之后多久响应
+					        throttleDelay: 500,
+					        geoIndex: 0 //设定可以执行刷选的范围
+					    },
 				      series: [
 				        {
 				          name: 'robotVehicle',
@@ -272,8 +311,7 @@
 				        },
 				      ]
 				    };
-				     myChart.setOption(option);
-				    
+				     myChart.setOption(option,true); //chart.setOption(option,notMerge,lazyUpdate);option:图表的配置项和数据  notMerge:可选，是否不跟之前设置的option进行合并，默认为false，即合并。（这里是导致二次渲染不成功的根本）lazyUpdate:可选，在设置完option后是否不立即更新图表，默认为false，即立即更新。		    
 				});}
 		</script>
 
@@ -282,11 +320,11 @@
 
 	<body>
 
-
+<!-- 
 		<div id="modeButton" class="modeButtonDivStyle">
 			<button id="detailsButton">details</button>
 			<button id="controlButton">control</button>			
-		</div><!-- thses buttons are used to change the model of the showing window -->
+		</div> thses buttons are used to change the model of the showing window -->
 
 		<div id="mainControlMapDiv" >
 			<div id="mainControlMap" class="controlMapDivStyle"></div>			
@@ -317,6 +355,9 @@
 			<div class="navbar navbar-inverse navbar-fixed-top" id="sidebar-wrapper" role="navigation"> <!-- the left bar for the details of the cars -->
 
 				<div id="cars"> <!--  showing the connect situation of the cars -->
+					<div class="btn_wrapper">
+							<button type="button" id="boardcast_btn">boardcast</button>  <!--  this button is going to creat a call to check the connection of the cars -->
+					</div>
 					<div class="cars_box_wrapper">
 						<table class="cars_box">
 							<thead>
@@ -330,9 +371,7 @@
 							</tbody>
 						</table>
 					</div>
-					<div class="btn_wrapper">
-							<button type="button" id="boardcast_btn">boardcast</button>  <!--  this button is going to creat a call to check the connection of the cars -->
-					</div>
+					
 				</div>
 
 				<div id="data"> <!--  this block gonna showing the detals of a pecular car which is choosed by the user -->
@@ -369,8 +408,25 @@
 				</div>
 
 				<div id="realTime"> <!-- shwing some messages that GUI is getting -->
-					<div id="message_title">Message</div>
-					<div id="message_body">00000000000000000000000000000000000000000000000000000000000000000000000000</div>
+					<div id="message_title">Command</div>
+					<div id="message_body">
+						<form name="input" action="mysql/postCommand.php" method="post">
+						CommandID:<select name="commandID">
+						<option value="1">一号指令</option>
+						<option value="2">二号指令</option>
+						<option value="3">三号指令</option>
+						<option value="4">四号指令</option>
+						</select><br>
+						start_x: <input type="text" name="start_x" value="0"><br>
+						start_y: <input type="text" name="start_y" value="0"><br>
+						start_z: <input type="text" name="start_z" value="0"><br>
+						end_x: <input type="text" name="end_x" value="0"><br>
+						end_y: <input type="text" name="end_y" value="0"><br>
+						end_z: <input type="text" name="end_z" value="0"><br>
+						已选: <input type="text" name="IDs" value="111" id="choosedId"><br>
+						<input type="submit" value="Submit">
+						</form> 
+					</div>
 				</div>
 
 			</div>

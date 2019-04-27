@@ -26,20 +26,29 @@ clients = {}
 lock = threading.RLock()
 
 def insertData2Sql(data) :
-    # 将string转换为dic
+    # 将string转换为dic/list
     data = json.loads(data)
     data = json.loads(data)
+
     # 打开数据库连接
     db = pymysql.connect("localhost", "root", "12345678", "swarmintelligence")
 
     # 使用cursor()方法获取操作游标
     cursor = db.cursor()
 
+    sql = []
     # SQL 插入语句
-    sql = """INSERT INTO `location` (`ID`, `X`, `Y`, `Z`, `speed`, `pitch`, `roll`, `azimuth`, `time`) VALUES ( """ + str(data['ID']) + "," + str(data['X']) + ","+ str(data['Y']) + "," + str(data['Z']) + ","+ str(data['speed']) + ","+ str(data['pitch']) + ","+ str(data['roll']) + ","+ str(data['azimuth']) + ", CURRENT_TIMESTAMP)"
+    if (type(data) == dict) :
+        sql.append("REPLACE INTO `location` SET `ID`=" + str(data['ID']) +",`X`=" + str(data['X']) +",`Y`="+ str(data['Y']) + ",`Z`="+ str(data['Z']) +",`speed`="+ str(data['speed']) + ",`pitch`="+ str(data['pitch']) + ",`roll`="+ str(data['roll']) + ",`azimuth`="+ str(data['azimuth']))
+    else :
+        sql.append("TRUNCATE TABLE history")
+        for idata in data :
+            sql.append("REPLACE INTO `location` SET `ID`=" + str(idata['ID']) +",`X`=" + str(idata['X']) +",`Y`="+ str(idata['Y']) + ",`Z`="+ str(idata['Z']) +",`speed`="+ str(idata['speed']) + ",`pitch`="+ str(idata['pitch']) + ",`roll`="+ str(idata['roll']) + ",`azimuth`="+ str(idata['azimuth']))
+
     try:
         # 执行sql语句
-        cursor.execute(sql)
+        for isql in sql :
+            cursor.execute(isql)
         # 提交到数据库执行
         db.commit()
     except:
@@ -73,6 +82,8 @@ class recvREGThread(threading.Thread) :
                         clients[addr[0]] = 0
                         self.s.sendto(bytes('REG', encoding = "utf8"), addr)
                         print(data.decode(), addr)
+                    else :
+                        self.s.sendto(bytes('REG', encoding = "utf8"), addr)    
                 elif data.decode() == 'LOG' :
                     if addr[0] in clients :
                         del clients[addr[0]]
@@ -105,7 +116,7 @@ class recvACKThread(threading.Thread) :
     def terminate(self) :
         self._running = False
 
-def __sendData(s, data) :
+def __sendData(s, data, times) :
     s.sendto(data, (MULTICAST_ADDR, MULTICAST_PORT))
     recvACK = recvACKThread(s)
     recvACK.start()
@@ -118,31 +129,36 @@ def __sendData(s, data) :
         for addr in clients:
             clients[addr] = 0
         return True
+    elif times != 3 :
+        times += 1
+        return __sendData(s, data, times)
     else :
-        return __sendData(s, data)
-
+        for addr in clients:
+            if clients[addr] == 0 :
+                del clients[addr]
+        for addr in clients:
+            clients[addr] = 0
+        return True
 
 # 监听数据库变化并读取数据
 def __fetchDataFromSql() :
-    # 打开数据库连接
-    db = pymysql.connect("localhost","root","12345678","swarmintelligence" )
-     
-    # 使用cursor()方法获取操作游标 
-    cursor = db.cursor()
-     
+
     # SQL 查询语句
     sql = "SELECT * FROM command ORDER BY time DESC"
-    time = 0
+    t = time.time()
     flag = True
     while flag :
         try:
             # 执行SQL语句
+            db = pymysql.connect("localhost","root","12345678","swarmintelligence" )
+            cursor = db.cursor()
             cursor.execute(sql)
             # 获取所有记录列表
             result = cursor.fetchone()
+            db.close()
             timestamp = result[7].timestamp()
-            if timestamp > time :
-                time = timestamp
+            if timestamp > t :
+                t = timestamp
                 data = {
                 'CommandID' : result[0],
                 'start_x'   : result[1],
@@ -161,8 +177,6 @@ def __fetchDataFromSql() :
         except:
            pass
 
-    # 关闭数据库连接
-    db.close()
     data = json.dumps(data)
     return data
 
@@ -178,17 +192,14 @@ def runSendService() :
 
     requestClient = recvREGThread(s, r)
     requestClient.start()
-    
     #监听数据库变化并读取数据进行发送
-    #flag 需要定义
-    #flag = True
-    #while flag :
-    data = __fetchDataFromSql()
-    time.sleep(5)
-    __sendData(s, bytes(data, encoding = 'utf8'))
+    flag = True
+    while flag :
+        data = __fetchDataFromSql()
+        __sendData(s, bytes(data, encoding = 'utf8'), 0)
 
     #通知终端退出
-    __sendData(s, bytes("STD", encoding = 'utf8'))
+    __sendData(s, bytes("STD", encoding = 'utf8'), 0)
     time.sleep(5)
 
     requestClient.terminate()
@@ -197,11 +208,11 @@ def runReceiveService() :
     server = socketserver.ThreadingTCPServer((SERVER_ADDR,RECV_PORT),TreeTCPHandler)
     server.serve_forever()#打开服务器
 
-# 测试
+
 if __name__ == '__main__':
     p1 = multiprocessing.Process(target=runReceiveService,args=())
     p2 = multiprocessing.Process(target=runSendService,args=())
     p1.start()
-    p2.start() 
+    p2.start()
     p1.join()
     p2.join()

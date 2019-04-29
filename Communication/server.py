@@ -27,7 +27,10 @@ lock = threading.RLock()
 
 def insertData2Sql(data) :
     # 将string转换为dic/list
-    data = json.loads(data)
+    #data = data[1:-1]
+    #data = json.loads(data)
+    #print(type(data))
+    #print(data)
     data = json.loads(data)
 
     # 打开数据库连接
@@ -42,8 +45,8 @@ def insertData2Sql(data) :
         sql.append("REPLACE INTO `location` SET `ID`=" + str(data['ID']) +",`X`=" + str(data['X']) +",`Y`="+ str(data['Y']) + ",`Z`="+ str(data['Z']) +",`speed`="+ str(data['speed']) + ",`pitch`="+ str(data['pitch']) + ",`roll`="+ str(data['roll']) + ",`azimuth`="+ str(data['azimuth']))
     else :
         sql.append("TRUNCATE TABLE history")
-        for idata in data :
-            sql.append("REPLACE INTO `location` SET `ID`=" + str(idata['ID']) +",`X`=" + str(idata['X']) +",`Y`="+ str(idata['Y']) + ",`Z`="+ str(idata['Z']) +",`speed`="+ str(idata['speed']) + ",`pitch`="+ str(idata['pitch']) + ",`roll`="+ str(idata['roll']) + ",`azimuth`="+ str(idata['azimuth']))
+        for i, idata in enumerate(data) :
+            sql.append("INSERT INTO `history` SET `ID`=" + str(idata['ID']) +",`X`=" + str(idata['X']) +",`Y`="+ str(idata['Y']) + ",`Z`="+ str(idata['Z']) +",`speed`="+ str(idata['speed']) + ",`pitch`="+ str(idata['pitch']) + ",`roll`="+ str(idata['roll']) + ",`azimuth`="+ str(idata['azimuth']) + ",`time`="+ str(i))
 
     try:
         # 执行sql语句
@@ -62,7 +65,7 @@ def insertData2Sql(data) :
 class TreeTCPHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
-        self.data = self.request.recv(1024).decode() #接受数据  
+        self.data = self.request.recv(20480).decode() #接受数据
         insertData2Sql(self.data)
 
 
@@ -155,7 +158,7 @@ def __fetchDataFromSql() :
             cursor.execute(sql)
             # 获取所有记录列表
             result = cursor.fetchone()
-            db.close()
+            
             timestamp = result[7].timestamp()
             if timestamp > t :
                 t = timestamp
@@ -173,10 +176,9 @@ def __fetchDataFromSql() :
                 flag = False
             else :
                 time.sleep(0.5)
-
+            db.close()
         except:
            pass
-
     data = json.dumps(data)
     return data
 

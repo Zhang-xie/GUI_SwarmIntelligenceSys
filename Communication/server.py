@@ -136,9 +136,12 @@ def __sendData(s, data, times) :
         times += 1
         return __sendData(s, data, times)
     else :
-        for addr in clients:
+    	lossAddr = []
+        for addr in clients :
             if clients[addr] == 0 :
-                del clients[addr]
+                lossAddr.append(addr)
+        for addr in lossAddr :
+        	del clients[addr]
         for addr in clients:
             clients[addr] = 0
         return True
